@@ -5,4 +5,14 @@ describe('msw and openapi-backend', () => {
     const res = await axios.get('/api/pets');
     expect(res.status).toBe(200);
   });
+
+  it('should return json', async () => {
+    const res = await axios.get('/api/pets');
+    expect(res.data.description).toEqual('getPets');
+  });
+
+  it('should return allow request params', async () => {
+    const res = await axios.get('/api/pets/1');
+    expect(res.data.description).toEqual('getPetsById');
+  });
 });

@@ -2,8 +2,7 @@ import { setupServer } from 'msw/node';
 import { rest } from 'msw';
 import OpenAPIBackend from 'openapi-backend';
 
-// create our mock backend with openapi-backend
-const api = new OpenAPIBackend({
+const apiDefinition = {
   definition: {
     openapi: '3.0.1',
     info: {
@@ -15,29 +14,57 @@ const api = new OpenAPIBackend({
         get: {
           operationId: 'getPets',
           responses: {
-            200: { description: 'ok' },
+            200: { description: 'getPets' },
           },
         },
       },
+      '/api/pets/{id}': {
+        get: {
+          operationId: 'getPetById',
+          responses: {
+            200: { description: 'getPetsById' },
+          },
+        },
+        parameters: [
+          {
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: {
+              type: 'integer',
+            },
+          },
+        ],
+      },
     },
   },
-});
+};
 
-api.register('notFound', (c, res, ctx) => res(ctx.status(404)));
+// create our mock backend with openapi-backend
+const handlers = Object.keys(apiDefinition.definition.paths).reduce(
+  (a, b) => ({
+    ...a,
+    [apiDefinition.definition.paths[b].get.operationId]: (c, res, ctx) =>
+      res(ctx.status(200), ctx.json(c.operation.responses['200'])),
+  }),
+  {}
+);
+
+const api = new OpenAPIBackend(apiDefinition);
+api.register(handlers);
 
 export const server = setupServer(
-  rest.get('/api/*', (req, res, ctx) => {
-    console.log(req.url.pathname);
-    return api.handleRequest(
-      // req, // <- this was in the example, but is the wrong format
+  rest.get('/api/*', (req, res, ctx) =>
+    api.handleRequest(
       {
         path: req.url.pathname,
         query: req.url.search,
         method: req.method,
-        headers: {},
+        headers: req.headers.getAllHeaders(),
+        body: req.body,
       },
       res,
       ctx
-    );
-  })
+    )
+  )
 );
