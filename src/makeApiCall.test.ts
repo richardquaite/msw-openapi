@@ -1,3 +1,4 @@
+import { waitFor } from '@testing-library/dom';
 import axios from 'axios';
 import { api } from './apiServer';
 
@@ -48,5 +49,25 @@ describe('msw and openapi-backend', () => {
 
     const res = await axios.get('/api/pets/2');
     expect(res.data).toEqual(mockResponse);
+  });
+
+  it('should handle method not allowed', async () => {
+    const err = await waitFor(() =>
+      axios
+        .post('/api/pets')
+        .then((res) => res)
+        .catch((err) => err)
+    );
+    expect(err.response.status).toBe(405);
+  });
+
+  it('should handle path not found', async () => {
+    const err = await waitFor(() =>
+      axios
+        .get('/api/unkown')
+        .then((res) => res)
+        .catch((err) => err)
+    );
+    expect(err.response.status).toBe(404);
   });
 });
