@@ -187,20 +187,21 @@ const apiDefinition: Document = {
 
 // create our mock backend with openapi-backend
 export const api = new OpenAPIBackend({ definition: apiDefinition });
-api.register('notFound', (c, res, ctx) =>
-  res(ctx.status(404), ctx.json({ err: 'not found' }))
-);
-api.register('validationFail', (c, res, ctx) =>
-  res(ctx.status(400), ctx.json({ err: c.validation.errors }))
-);
-api.register('notImplemented', async (c, res, ctx) => {
+export const notImplementedHandler = async (c, res, ctx) => {
   if (c.operation.operationId) {
     const { status, mock } = await api.mockResponseForOperation(
       c.operation.operationId
     );
     return res(ctx.status(status), ctx.json(mock));
   }
-});
+};
+api.register('notFound', (c, res, ctx) =>
+  res(ctx.status(404), ctx.json({ err: 'not found' }))
+);
+api.register('validationFail', (c, res, ctx) =>
+  res(ctx.status(400), ctx.json({ err: c.validation.errors }))
+);
+api.register('notImplemented', notImplementedHandler);
 api.register('methodNotAllowed', (c, res, ctx) =>
   res(ctx.status(405), ctx.json({ status: 405, err: 'Method not allowed' }))
 );

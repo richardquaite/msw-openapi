@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import axios from 'axios';
-import { api } from './apiServer';
+import { api, notImplementedHandler } from './apiServer';
 import { ExampleComponent } from './ExampleComponent';
 
 describe('msw and openapi-backend', () => {
@@ -67,7 +67,9 @@ describe('msw and openapi-backend', () => {
   /**
    * Once a new handler is registered for an operation, every request to that
    * path hits this handler instead of the `notImplemented` one which returns
-   * the api definition example data :-(
+   * the api definition example data. So it needs to be re-registered to use
+   * the notImplemented implmentation. Ideally we could move this to `afterEach`
+   * in setupTests.ts
    */
   it('can override example responses', async () => {
     const mockResponse = [{ id: 2, name: 'Odie' }];
@@ -76,6 +78,7 @@ describe('msw and openapi-backend', () => {
 
     const res = await axios.get('/api/pets/2');
     expect(res.data).toEqual(mockResponse);
+    api.register('getPetById', notImplementedHandler);
   });
 
   it('should work with react components', async () => {
@@ -89,8 +92,14 @@ describe('msw and openapi-backend', () => {
     expect(screen.getByText('Marjorie')).toBeInTheDocument();
   });
 
-  it('can assert based on the standard mocked response', async () => {
-    const mockResponse = await axios.get('/api/pets').then((res) => res.data);
+  it('should work with react components and mocked responses', async () => {
+    const mockResponse = [
+      { id: 1, name: 'Pet A' },
+      { id: 2, name: 'Pet B' },
+      { id: 3, name: 'Pet C' },
+    ];
+    const mockHandler = jest.fn((c, res, ctx) => res(ctx.json(mockResponse)));
+    api.register('getPets', mockHandler);
 
     render(<ExampleComponent />);
     expect(screen.getByText('No pets')).toBeInTheDocument();
@@ -101,16 +110,11 @@ describe('msw and openapi-backend', () => {
     mockResponse.forEach((pet) =>
       expect(screen.getByText(pet.name)).toBeInTheDocument()
     );
+    api.register('getPets', notImplementedHandler);
   });
 
-  it('should work with react components and mocked responses', async () => {
-    const mockResponse = [
-      { id: 1, name: 'Pet A' },
-      { id: 2, name: 'Pet B' },
-      { id: 3, name: 'Pet C' },
-    ];
-    const mockHandler = jest.fn((c, res, ctx) => res(ctx.json(mockResponse)));
-    api.register('getPets', mockHandler);
+  it('can assert based on the standard mocked response', async () => {
+    const mockResponse = await axios.get('/api/pets').then((res) => res.data);
 
     render(<ExampleComponent />);
     expect(screen.getByText('No pets')).toBeInTheDocument();
