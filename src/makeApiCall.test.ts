@@ -27,19 +27,40 @@ describe('msw and openapi-backend', () => {
     ]);
   });
 
+  it('should handle post requests', async () => {
+    const res = await axios.post('/api/pets', { name: 'Billy' });
+    expect(res.data).toEqual({ id: 1, name: 'Billy' });
+  });
+
+  it('should handle post validation errors', async () => {
+    const err = await waitFor(() =>
+      axios.post('/api/pets', {}).catch((err) => err)
+    );
+    expect(err.response.status).toBe(400);
+  });
+
   it('should allow request params', async () => {
     const res = await axios.get('/api/pets/1');
     expect(res.data).toEqual({ id: 1, name: 'Simon' });
   });
 
-  it('should handle post requests', async () => {
-    const res = await axios.post('/api/pets/1');
-    expect(res.data).toEqual({ id: 1, name: 'Billy' });
-  });
-
   it('should handle patch requests', async () => {
     const res = await axios.patch('/api/pets/1');
     expect(res.data).toEqual({ id: 1, name: 'Gregory' });
+  });
+
+  it('should handle method not allowed', async () => {
+    const err = await waitFor(() =>
+      axios.delete('/api/pets').catch((err) => err)
+    );
+    expect(err.response.status).toBe(405);
+  });
+
+  it('should handle path not found', async () => {
+    const err = await waitFor(() =>
+      axios.get('/api/unkown').catch((err) => err)
+    );
+    expect(err.response.status).toBe(404);
   });
 
   it('can override example responses', async () => {
@@ -49,25 +70,5 @@ describe('msw and openapi-backend', () => {
 
     const res = await axios.get('/api/pets/2');
     expect(res.data).toEqual(mockResponse);
-  });
-
-  it('should handle method not allowed', async () => {
-    const err = await waitFor(() =>
-      axios
-        .post('/api/pets')
-        .then((res) => res)
-        .catch((err) => err)
-    );
-    expect(err.response.status).toBe(405);
-  });
-
-  it('should handle path not found', async () => {
-    const err = await waitFor(() =>
-      axios
-        .get('/api/unkown')
-        .then((res) => res)
-        .catch((err) => err)
-    );
-    expect(err.response.status).toBe(404);
   });
 });

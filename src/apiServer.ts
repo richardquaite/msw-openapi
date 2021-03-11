@@ -57,6 +57,50 @@ const apiDefinition: Document = {
           },
         },
       },
+      post: {
+        operationId: 'postPet',
+        responses: {
+          200: {
+            description: 'postPet',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'integer',
+                      format: 'int64',
+                    },
+                    name: {
+                      type: 'string',
+                    },
+                  },
+                },
+                example: {
+                  id: 1,
+                  name: 'Billy',
+                },
+              },
+            },
+          },
+        },
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['name'],
+                properties: {
+                  name: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     '/api/pets/{id}': {
       get: {
@@ -92,34 +136,6 @@ const apiDefinition: Document = {
                 schema: {
                   type: 'string',
                   example: 'pet not found',
-                },
-              },
-            },
-          },
-        },
-      },
-      post: {
-        operationId: 'postPet',
-        responses: {
-          200: {
-            description: 'postPet',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    id: {
-                      type: 'integer',
-                      format: 'int64',
-                    },
-                    name: {
-                      type: 'string',
-                    },
-                  },
-                },
-                example: {
-                  id: 1,
-                  name: 'Billy',
                 },
               },
             },
@@ -172,6 +188,9 @@ const apiDefinition: Document = {
 export const api = new OpenAPIBackend({ definition: apiDefinition });
 api.register('notFound', (c, res, ctx) =>
   res(ctx.status(404), ctx.json({ err: 'not found' }))
+);
+api.register('validationFail', (c, res, ctx) =>
+  res(ctx.status(400), ctx.json({ err: c.validation.errors }))
 );
 api.register('notImplemented', async (c, res, ctx) => {
   if (c.operation.operationId) {
