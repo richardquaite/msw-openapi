@@ -151,6 +151,7 @@ const apiDefinition: Document = {
               'application/json': {
                 schema: {
                   type: 'object',
+                  required: ['id', 'name'],
                   properties: {
                     id: {
                       type: 'integer',
