@@ -26,12 +26,18 @@ const apiDefinition: Document = {
                         type: 'integer',
                         format: 'int64',
                       },
+                      name: { type: 'string' },
                     },
                   },
                 },
                 example: [
                   {
                     id: 1,
+                    name: 'Willis',
+                  },
+                  {
+                    id: 2,
+                    name: 'Marjorie',
                   },
                 ],
               },
@@ -51,11 +57,13 @@ const apiDefinition: Document = {
           },
         },
       },
-      post: {
-        operationId: 'postPets',
+    },
+    '/api/pets/{id}': {
+      get: {
+        operationId: 'getPetById',
         responses: {
           200: {
-            description: 'postPets',
+            description: 'getPetById',
             content: {
               'application/json': {
                 schema: {
@@ -65,10 +73,53 @@ const apiDefinition: Document = {
                       type: 'integer',
                       format: 'int64',
                     },
+                    name: {
+                      type: 'string',
+                    },
                   },
                 },
                 example: {
                   id: 1,
+                  name: 'Simon',
+                },
+              },
+            },
+          },
+          404: {
+            description: 'notFound',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'string',
+                  example: 'pet not found',
+                },
+              },
+            },
+          },
+        },
+      },
+      post: {
+        operationId: 'postPet',
+        responses: {
+          200: {
+            description: 'postPet',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    id: {
+                      type: 'integer',
+                      format: 'int64',
+                    },
+                    name: {
+                      type: 'string',
+                    },
+                  },
+                },
+                example: {
+                  id: 1,
+                  name: 'Billy',
                 },
               },
             },
@@ -76,10 +127,10 @@ const apiDefinition: Document = {
         },
       },
       patch: {
-        operationId: 'patchPets',
+        operationId: 'patchPet',
         responses: {
           200: {
-            description: 'patchPets',
+            description: 'patchPet',
             content: {
               'application/json': {
                 schema: {
@@ -89,36 +140,14 @@ const apiDefinition: Document = {
                       type: 'integer',
                       format: 'int64',
                     },
-                  },
-                },
-                example: {
-                  id: 1,
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    '/api/pets/{id}': {
-      get: {
-        operationId: 'getPetById',
-        responses: {
-          200: {
-            description: 'getPetsById',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    id: {
-                      type: 'integer',
-                      format: 'int64',
+                    name: {
+                      type: 'string',
                     },
                   },
                 },
                 example: {
                   id: 1,
+                  name: 'Gregory',
                 },
               },
             },
@@ -140,15 +169,17 @@ const apiDefinition: Document = {
 };
 
 // create our mock backend with openapi-backend
-const api = new OpenAPIBackend({ definition: apiDefinition });
-api.register('notFound', (c, res, ctx) =>
-  res(ctx.status(404), ctx.json({ err: 'not found' }))
-);
+export const api = new OpenAPIBackend({ definition: apiDefinition });
+// api.register('notFound', (c, res, ctx) =>
+//   res(ctx.status(404), ctx.json({ err: 'not found' }))
+// );
 api.register('notImplemented', async (c, res, ctx) => {
-  const { status, mock } = await api.mockResponseForOperation(
-    c.operation.operationId!
-  );
-  return res(ctx.status(status), ctx.json(mock));
+  if (c.operation.operationId) {
+    const { status, mock } = await api.mockResponseForOperation(
+      c.operation.operationId
+    );
+    return res(ctx.status(status), ctx.json(mock));
+  }
 });
 
 const convertRequest = (req: RestRequest) => ({
