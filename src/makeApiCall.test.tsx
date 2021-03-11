@@ -83,9 +83,9 @@ describe('msw and openapi-backend', () => {
 
   it('should work with react components', async () => {
     render(<ExampleComponent />);
-    expect(screen.getByText('No pets')).toBeInTheDocument();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.queryByText('No pets')).not.toBeInTheDocument()
+      expect(screen.queryByText('Loading')).not.toBeInTheDocument()
     );
     expect(typeof screen.getAllByRole('listitem')).toEqual('object');
   });
@@ -100,28 +100,47 @@ describe('msw and openapi-backend', () => {
     api.register('getPets', mockHandler);
 
     render(<ExampleComponent />);
-    expect(screen.getByText('No pets')).toBeInTheDocument();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.queryByText('No pets')).not.toBeInTheDocument()
+      expect(screen.queryByText('Loading')).not.toBeInTheDocument()
     );
-    expect(screen.getAllByRole('listitem')).toHaveLength(mockResponse.length);
-    mockResponse.forEach((pet) =>
-      expect(screen.getByText(pet.name)).toBeInTheDocument()
-    );
+    expect(screen.getAllByRole('listitem')).toHaveLength(3);
+    expect(screen.getByText('Pet A')).toBeInTheDocument();
+    expect(screen.getByText('Pet B')).toBeInTheDocument();
+    expect(screen.getByText('Pet C')).toBeInTheDocument();
     api.register('getPets', handlers.notImplemented);
   });
 
   it('can assert based on the standard mocked response', async () => {
+    // this is the equivalent of importing from the generated api response mocks
     const mockResponse = await axios.get('/api/pets').then((res) => res.data);
 
     render(<ExampleComponent />);
-    expect(screen.getByText('No pets')).toBeInTheDocument();
+    expect(screen.getByText('Loading')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.queryByText('No pets')).not.toBeInTheDocument()
+      expect(screen.queryByText('Loading')).not.toBeInTheDocument()
     );
     expect(screen.getAllByRole('listitem')).toHaveLength(mockResponse.length);
     mockResponse.forEach((pet) =>
       expect(screen.getByText(pet.name)).toBeInTheDocument()
     );
+  });
+
+  it('can override responses to simulate functionality', async () => {
+    const mockResponse = await axios.get('/api/pets/1').then((res) => res.data);
+
+    const res1 = await axios.get('/api/pets/1');
+    expect(res1.data).toEqual({ id: 1, name: 'Simon' });
+
+    const mockResponseWithMore = { ...mockResponse, name: 'Gordon' };
+    const mockHandler = jest.fn((c, res, ctx) =>
+      res(ctx.json(mockResponseWithMore))
+    );
+    api.register('getPetById', mockHandler);
+
+    const res2 = await axios.get('/api/pets/1');
+    expect(res2.data).toEqual({ id: 1, name: 'Gordon' });
+
+    api.register('getPetById', handlers.notImplemented);
   });
 });
