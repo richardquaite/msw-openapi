@@ -1,4 +1,3 @@
-import { setupServer } from 'msw/node';
 import { rest, RestRequest } from 'msw';
 import OpenAPIBackend, { Context, Document } from 'openapi-backend';
 
@@ -214,7 +213,7 @@ const convertRequest = (req: RestRequest) => ({
   body: req.body,
 });
 
-export const server = setupServer(
+export const mswHandlers = [
   rest.get('/api/*', (req, res, ctx) =>
     api.handleRequest(convertRequest(req), res, ctx)
   ),
@@ -226,5 +225,5 @@ export const server = setupServer(
   ),
   rest.delete('/api/*', (req, res, ctx) =>
     api.handleRequest(convertRequest(req), res, ctx)
-  )
-);
+  ),
+];
