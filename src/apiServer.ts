@@ -1,6 +1,6 @@
 import { setupServer } from 'msw/node';
 import { rest, RestRequest } from 'msw';
-import OpenAPIBackend, { Document } from 'openapi-backend';
+import OpenAPIBackend, { Context, Document } from 'openapi-backend';
 
 const apiDefinition: Document = {
   openapi: '3.0.1',
@@ -187,24 +187,24 @@ const apiDefinition: Document = {
 
 // create our mock backend with openapi-backend
 export const api = new OpenAPIBackend({ definition: apiDefinition });
-export const notImplementedHandler = async (c, res, ctx) => {
-  if (c.operation.operationId) {
-    const { status, mock } = await api.mockResponseForOperation(
-      c.operation.operationId
-    );
-    return res(ctx.status(status), ctx.json(mock));
-  }
+
+export const handlers = {
+  notFound: (c: Context, res: any, ctx: any) =>
+    res(ctx.status(404), ctx.json({ err: 'not found' })),
+  validationFail: (c: Context, res: any, ctx: any) =>
+    res(ctx.status(400), ctx.json({ err: c.validation.errors })),
+  notImplemented: async (c: Context, res: any, ctx: any) => {
+    if (c.operation.operationId) {
+      const { status, mock } = await api.mockResponseForOperation(
+        c.operation.operationId
+      );
+      return res(ctx.status(status || 500), ctx.json(mock));
+    }
+  },
+  methodNotAllowed: (c: Context, res: any, ctx: any) =>
+    res(ctx.status(405), ctx.json({ status: 405, err: 'Method not allowed' })),
 };
-api.register('notFound', (c, res, ctx) =>
-  res(ctx.status(404), ctx.json({ err: 'not found' }))
-);
-api.register('validationFail', (c, res, ctx) =>
-  res(ctx.status(400), ctx.json({ err: c.validation.errors }))
-);
-api.register('notImplemented', notImplementedHandler);
-api.register('methodNotAllowed', (c, res, ctx) =>
-  res(ctx.status(405), ctx.json({ status: 405, err: 'Method not allowed' }))
-);
+api.register(handlers);
 
 const convertRequest = (req: RestRequest) => ({
   path: req.url.pathname,
